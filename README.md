@@ -16,16 +16,16 @@
 
 ## What is Snepirelay?
 
-A jam lets friends listen together: one person hosts, everyone hears the same song at the same moment, and guests can add to the queue or take over the controls. spfy only lets premium accounts host one.
+A jam lets friends listen together: one person hosts, everyone hears the same song at the same moment, and guests can add to the queue or take over the controls. Usually only a paid account may host one.
 
 Snepirelay is the server that lets [Snepilatch](https://github.com/PianoNic/Snepilatch) host jams for any account. Every member still plays the music on their own account and their own device. The relay only carries what keeps them together: the host's playback, the guests' requests, and who is in the jam.
 
-No audio passes through it, and it never sees spfy credentials.
+No audio passes through it, and it never sees anyone's login.
 
 ## Features
 
 - **Anyone can host**: a free account starts a jam the same way a premium one does.
-- **The official jam, rebuilt**: join with the token an invite carries, guests queue songs or control playback, the host can kick guests or limit them to the queue, and membership changes use the same reasons spfy's own jam does.
+- **The official jam, rebuilt**: join with the token an invite carries, guests queue songs or control playback, the host can kick guests or limit them to the queue, and membership changes use the same reasons an official jam does.
 - **In sync**: the host's position comes with a server timestamp, and a ping gives each device its clock offset, so guests land on the same second.
 - **Survives a tunnel**: a dropped connection keeps its place for a minute and comes back into the same jam.
 - **Nothing stored**: jams live in memory and are gone when they end.

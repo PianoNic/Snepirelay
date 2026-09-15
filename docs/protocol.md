@@ -14,7 +14,7 @@ The first message must be `hello`. Anything else gets `HELLO_REQUIRED` and the s
   "protocol": 1,
   "installId": "made once per install, 8 to 128 characters",
   "secret": "made once per install, 32 to 256 characters",
-  "profile": { "userId": "spfy user id", "displayName": "Nic", "imageUrl": "https://..." },
+  "profile": { "userId": "account id", "displayName": "Nic", "imageUrl": "https://..." },
   "device": { "deviceId": "connect device id", "name": "S25 Ultra", "type": "Smartphone" }
 }
 ```
@@ -86,14 +86,14 @@ The host is the source of truth. It sends `playback` whenever its state changes:
 {
   "type": "playback",
   "state": {
-    "trackUri": "spotify:track:...",
-    "contextUri": "spotify:playlist:...",
+    "trackUri": "track:...",
+    "contextUri": "playlist:...",
     "positionMs": 42000,
     "durationMs": 200000,
     "paused": false,
     "shuffle": false,
     "repeat": "off",
-    "queue": [{ "uri": "spotify:track:...", "uid": "...", "addedBy": "member id or null" }],
+    "queue": [{ "uri": "track:...", "uid": "...", "addedBy": "member id or null" }],
     "sampledAt": 1789473600000
   }
 }
