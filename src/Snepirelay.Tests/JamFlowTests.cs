@@ -13,13 +13,13 @@ namespace Snepirelay.Tests
             state = new
             {
                 trackUri,
-                contextUri = "spotify:playlist:abc",
+                contextUri = "playlist:abc",
                 positionMs = 42_000,
                 durationMs = 200_000,
                 paused = false,
                 shuffle = false,
                 repeat = "off",
-                queue = new[] { new { uri = "spotify:track:next", uid = "q1", addedBy = (string?)null } },
+                queue = new[] { new { uri = "track:next", uid = "q1", addedBy = (string?)null } },
                 sampledAt,
             },
         };
@@ -62,8 +62,8 @@ namespace Snepirelay.Tests
             await Assert.That(joined.At("session", "members").GetArrayLength()).IsEqualTo(2);
             await Assert.That(joined.At("session", "isOwner").GetBoolean()).IsFalse();
 
-            await host.SendAsync(Playback("spotify:track:one"));
-            await Assert.That((await first.ExpectAsync("playback")).Str("state", "trackUri")).IsEqualTo("spotify:track:one");
+            await host.SendAsync(Playback("track:one"));
+            await Assert.That((await first.ExpectAsync("playback")).Str("state", "trackUri")).IsEqualTo("track:one");
             await host.ExpectAsync("ok");
 
             await second.SendAsync(new { type = "join", joinToken });
@@ -107,14 +107,14 @@ namespace Snepirelay.Tests
             await Assert.That(refused.Str("error")).IsEqualTo("NOT_ALLOWED");
             await Assert.That(refused.Str("values", "guestControl")).IsEqualTo("QueueOnly");
 
-            await guest.SendAsync(new { type = "command", command = new { kind = "addToQueue", uri = "spotify:track:wish" } });
-            await Assert.That((await host.ExpectAsync("command")).Str("command", "uri")).IsEqualTo("spotify:track:wish");
+            await guest.SendAsync(new { type = "command", command = new { kind = "addToQueue", uri = "track:wish" } });
+            await Assert.That((await host.ExpectAsync("command")).Str("command", "uri")).IsEqualTo("track:wish");
 
             await host.SendAsync(new { type = "settings", guestControl = "none" });
             await host.ExpectAsync("session_update");
             await guest.ExpectAsync("session_update");
 
-            await guest.SendAsync(new { type = "command", command = new { kind = "addToQueue", uri = "spotify:track:wish" } });
+            await guest.SendAsync(new { type = "command", command = new { kind = "addToQueue", uri = "track:wish" } });
             await Assert.That((await guest.ExpectAsync("error")).Str("error")).IsEqualTo("NOT_ALLOWED");
         }
 
@@ -193,15 +193,15 @@ namespace Snepirelay.Tests
             await using var relay = await RelayHost.StartAsync();
             var (host, guest, _) = await JamWithGuestAsync(relay);
 
-            await host.SendAsync(Playback("spotify:track:one"));
+            await host.SendAsync(Playback("track:one"));
             await Assert.That((await guest.ExpectAsync("playback")).At("state", "sampledAt").GetInt64()).IsEqualTo(relay.NowMs);
             await host.ExpectAsync("ok");
 
-            await host.SendAsync(Playback("spotify:track:one", sampledAt: relay.NowMs - 1_500));
+            await host.SendAsync(Playback("track:one", sampledAt: relay.NowMs - 1_500));
             await Assert.That((await guest.ExpectAsync("playback")).At("state", "sampledAt").GetInt64()).IsEqualTo(relay.NowMs - 1_500);
             await host.ExpectAsync("ok");
 
-            await host.SendAsync(Playback("spotify:track:one", sampledAt: relay.NowMs - 3_600_000));
+            await host.SendAsync(Playback("track:one", sampledAt: relay.NowMs - 3_600_000));
             await Assert.That((await guest.ExpectAsync("playback")).At("state", "sampledAt").GetInt64()).IsEqualTo(relay.NowMs);
         }
     }
