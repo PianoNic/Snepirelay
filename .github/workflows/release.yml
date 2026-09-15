@@ -1,0 +1,191 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  ci:
+    name: Gates
+    uses: ./.github/workflows/ci.yml
+
+  sync-version:
+    name: Bump version to the release tag
+    needs: ci
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.sync.outputs.version }}
+      sha: ${{ steps.sync.outputs.sha }}
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Configure git as the maintainer
+        run: |
+          git config user.name "PianoNic"
+          git config user.email "79938743+PianoNic@users.noreply.github.com"
+
+      - name: Bump application.properties
+        id: sync
+        env:
+          TAG_NAME: ${{ github.event.release.tag_name }}
+        run: |
+          set -uo pipefail
+
+          TAG_VERSION="$(printf '%s' "$TAG_NAME" | sed -E 's/^[^0-9]*//')"
+          FILE_VERSION=$(grep -oP '(?<=<version>)[^<]+' application.properties)
+          echo "version=$TAG_VERSION" >> "$GITHUB_OUTPUT"
+
+          publish_head() {
+            echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          }
+
+          if [ "$TAG_VERSION" = "$FILE_VERSION" ]; then
+            publish_head
+            exit 0
+          fi
+
+          sed -i "s|<version>$FILE_VERSION</version>|<version>$TAG_VERSION</version>|" application.properties
+
+          git add application.properties
+          if git diff --cached --quiet; then
+            echo "::warning::application.properties was not rewritten; leaving main as it is."
+            publish_head
+            exit 0
+          fi
+
+          git commit -m "Bumped application.properties to $TAG_VERSION for release [skip ci]"
+
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then
+              publish_head
+              exit 0
+            fi
+            git fetch origin main
+            if ! git rebase origin/main; then
+              git rebase --abort || true
+              echo "::error::The version bump does not rebase onto main cleanly."
+              exit 1
+            fi
+          done
+
+          echo "::error::Could not push the version bump to main."
+          exit 1
+
+  docker:
+    name: Build and push multi-arch image
+    needs: sync-version
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout the commit the version bump landed on
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.sync-version.outputs.sha }}
+
+      - name: Prepare image names
+        id: prep
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+        run: |
+          echo "repository_lowercase=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
+
+          IMAGES="ghcr.io/${GITHUB_REPOSITORY,,}"
+
+          if [ -n "$DOCKERHUB_USERNAME" ]; then
+            IMAGES="$IMAGES"$'\n'"docker.io/${DOCKERHUB_USERNAME,,}/${GITHUB_REPOSITORY##*/}"
+            IMAGES="${IMAGES,,}"
+            echo "dockerhub=true" >> $GITHUB_OUTPUT
+          else
+            echo "dockerhub=false" >> $GITHUB_OUTPUT
+          fi
+
+          {
+            echo "images<<EOF"
+            echo "$IMAGES"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log in to Docker Hub
+        if: steps.prep.outputs.dockerhub == 'true'
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Decide whether the moving tags may point at this release
+        id: moving
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ github.event.release.tag_name }}
+          PRERELEASE: ${{ github.event.release.prerelease }}
+        run: |
+          set -uo pipefail
+
+          if [ "$PRERELEASE" = "true" ]; then
+            echo "enable=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          published=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases" \
+            --jq '.[] | select(.draft == false and .prerelease == false) | .tag_name') || published=""
+
+          highest=$(printf '%s\n' "$published" | sed -E 's/^[^0-9]*//' | grep -E '^[0-9]' | sort -V | tail -n1)
+          version="$(printf '%s' "$TAG_NAME" | sed -E 's/^[^0-9]*//')"
+
+          if [ -n "$highest" ] && [ "$version" = "$highest" ]; then
+            echo "enable=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::$TAG_NAME is not the highest published version; leaving latest, {major} and {major}.{minor} alone."
+            echo "enable=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ steps.prep.outputs.images }}
+          tags: |
+            type=semver,pattern={{version}},value=${{ github.event.release.tag_name }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ github.event.release.tag_name }},enable=${{ steps.moving.outputs.enable }}
+            type=semver,pattern={{major}},value=${{ github.event.release.tag_name }},enable=${{ steps.moving.outputs.enable }}
+            type=raw,value=latest,enable=${{ steps.moving.outputs.enable }}
+
+      - name: Build and push multi-arch Docker image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./src/Snepirelay.API/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: |
+            type=gha
+            type=registry,ref=ghcr.io/${{ steps.prep.outputs.repository_lowercase }}:buildcache
+          cache-to: |
+            type=gha,mode=max
+            type=registry,ref=ghcr.io/${{ steps.prep.outputs.repository_lowercase }}:buildcache,mode=max
+          provenance: false
+          sbom: false

@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="Mediator.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Options" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Snepirelay.Domain\Snepirelay.Domain.csproj" />
+    <ProjectReference Include="..\Snepirelay.Infrastructure\Snepirelay.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>
