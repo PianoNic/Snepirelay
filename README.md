@@ -23,12 +23,8 @@ Today it powers **jams**: friends listening together, with any account able to h
 
 ## Features
 
-- **Real time**: one WebSocket per device, messages relayed as soon as they arrive.
-- **Survives a tunnel**: a dropped connection keeps its place for a minute and picks up where it left off.
-- **In sync**: every message carries server time, and a ping gives each device its clock offset.
-- **Nothing stored**: everything lives in memory and is gone when it is no longer needed.
-- **Tiny footprint**: one small container, a few kilobytes per message, no database.
-- **Built to grow**: each feature is a set of commands on the same connection, so new ones slot in beside jams.
+- **Survives a tunnel**: a device that drops out keeps its place for a minute.
+- **Nothing on disk**: everything lives in memory, a restart starts fresh.
 
 ## Jams
 
