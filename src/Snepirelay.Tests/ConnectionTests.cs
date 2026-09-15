@@ -131,6 +131,24 @@ namespace Snepirelay.Tests
             await Assert.That(health.StatusCode).IsEqualTo(HttpStatusCode.OK);
         }
 
+        [Test]
+        public async Task OpenApi_and_Scalar_are_served_in_development_only()
+        {
+            await using (var development = await RelayHost.StartAsync(environment: "Development"))
+            {
+                var document = await development.Http.GetFromJsonElementAsync("openapi/v1.json");
+                await Assert.That(document.At("paths").TryGetProperty("/api/jams/{joinToken}", out _)).IsTrue();
+                await Assert.That(document.At("paths").TryGetProperty("/api/relay", out _)).IsFalse();
+
+                var scalar = await development.Http.GetAsync("scalar/v1");
+                await Assert.That(scalar.StatusCode).IsEqualTo(HttpStatusCode.OK);
+            }
+
+            await using var production = await RelayHost.StartAsync(environment: "Production");
+            await Assert.That((await production.Http.GetAsync("openapi/v1.json")).StatusCode).IsEqualTo(HttpStatusCode.NotFound);
+            await Assert.That((await production.Http.GetAsync("scalar/v1")).StatusCode).IsEqualTo(HttpStatusCode.NotFound);
+        }
+
         private static bool ListeningOf(JsonElement update, string memberId) =>
             update.At("session", "members").EnumerateArray().Single(m => m.Str("id") == memberId).At("listening").GetBoolean();
     }

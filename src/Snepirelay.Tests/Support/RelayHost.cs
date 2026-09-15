@@ -26,10 +26,10 @@ namespace Snepirelay.Tests.Support
         public HttpClient Http => Server.CreateClient();
         public long NowMs => Time.GetUtcNow().ToUnixTimeMilliseconds();
 
-        public static async Task<RelayHost> StartAsync(int maxMemberCount = 32)
+        public static async Task<RelayHost> StartAsync(int maxMemberCount = 32, string environment = "Testing")
         {
             var time = new FakeTimeProvider(new DateTimeOffset(2026, 9, 15, 12, 0, 0, TimeSpan.Zero));
-            var builder = WebApplication.CreateBuilder(new WebApplicationOptions { EnvironmentName = "Testing" });
+            var builder = WebApplication.CreateBuilder(new WebApplicationOptions { EnvironmentName = environment });
             builder.WebHost.UseTestServer();
             builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
             {

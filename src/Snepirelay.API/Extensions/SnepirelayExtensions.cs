@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Mediator;
 using Microsoft.Extensions.Options;
+using Scalar.AspNetCore;
 using Snepirelay.API.Controllers;
 using Snepirelay.Application;
 using Snepirelay.Application.Behaviors;
@@ -21,6 +22,8 @@ namespace Snepirelay.API.Extensions
                 .AddApplicationPart(typeof(AppController).Assembly)
                 .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)));
 
+            services.AddOpenApi();
+
             services.AddMediator((MediatorOptions options) =>
             {
                 options.ServiceLifetime = ServiceLifetime.Singleton;
@@ -37,6 +40,12 @@ namespace Snepirelay.API.Extensions
         public static WebApplication MapSnepirelay(this WebApplication app)
         {
             var options = app.Services.GetRequiredService<IOptions<RelayOptions>>().Value;
+
+            if (app.Environment.IsDevelopment())
+            {
+                app.MapOpenApi();
+                app.MapScalarApiReference(scalar => scalar.WithTitle("Snepirelay"));
+            }
 
             app.UseWebSockets(new WebSocketOptions { KeepAliveInterval = options.KeepAliveInterval });
             app.MapControllers();
