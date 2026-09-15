@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/snepirelay_Logo.png" width="140" alt="Snepirelay Logo" />
+  <img src="assets/snepirelay-icon.svg" width="180" alt="Snepirelay Logo" />
 </p>
 <p align="center">
   <strong>Snepirelay</strong><br/>
