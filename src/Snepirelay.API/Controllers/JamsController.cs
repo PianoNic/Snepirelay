@@ -1,5 +1,6 @@
 using Mediator;
 using Microsoft.AspNetCore.Mvc;
+using Snepirelay.API.Extensions;
 using Snepirelay.Application.Dtos.Jams;
 using Snepirelay.Application.Queries.Jams;
 

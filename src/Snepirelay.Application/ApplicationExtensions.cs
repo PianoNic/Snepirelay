@@ -15,6 +15,7 @@ namespace Snepirelay.Application
             services.AddSingleton<ConnectionRegistry>();
             services.AddSingleton<JamNotifier>();
             services.AddSingleton<JamMemberships>();
+            services.AddSingleton<RelaySocketRunner>();
             services.AddHostedService<SweepService>();
             return services;
         }

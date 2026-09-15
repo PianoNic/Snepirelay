@@ -29,8 +29,8 @@ TUnit is a Microsoft.Testing.Platform framework and the .NET 10 SDK dropped the 
 | --- | --- |
 | `Snepirelay.Domain` | jams, members and the playback value objects |
 | `Snepirelay.Infrastructure` | the in-memory store |
-| `Snepirelay.Application` | commands, queries and handlers, the `Result` type, the relay events |
-| `Snepirelay.API` | the WebSocket endpoint, controllers, startup |
+| `Snepirelay.Application` | commands, queries and handlers, the `Result` type, the relay messages and the socket runner |
+| `Snepirelay.API` | `Program.cs`, `Extensions` and `Controllers`, the WebSocket included |
 | `Snepirelay.Tests` | the end-to-end suite |
 
 Every socket message becomes a Mediator command, and every handler returns a `Result`. The same `Result` answers both sides: `ToActionResult` for HTTP and `ToRelayReply` for the socket, with the same `{ error, values }` shape. One pipeline behavior runs messages one at a time, so handlers never race over a jam.

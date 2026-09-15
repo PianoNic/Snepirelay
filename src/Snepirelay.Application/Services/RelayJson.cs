@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Snepirelay.API.Relay
+namespace Snepirelay.Application.Services
 {
     public static class RelayJson
     {

@@ -3,7 +3,6 @@ using System.Text.Json.Serialization;
 using Mediator;
 using Microsoft.Extensions.Options;
 using Snepirelay.API.Controllers;
-using Snepirelay.API.Relay;
 using Snepirelay.Application;
 using Snepirelay.Application.Behaviors;
 using Snepirelay.Infrastructure.Extensions;
@@ -13,7 +12,6 @@ namespace Snepirelay.API.Extensions
     public static class SnepirelayExtensions
     {
         public const string LivePath = "/health/live";
-        public const string RelayPath = "/api/relay";
 
         public static IServiceCollection AddSnepirelay(this IServiceCollection services, IConfiguration configuration)
         {
@@ -43,7 +41,6 @@ namespace Snepirelay.API.Extensions
             app.UseWebSockets(new WebSocketOptions { KeepAliveInterval = options.KeepAliveInterval });
             app.MapControllers();
             app.MapHealthChecks(LivePath);
-            app.Map(RelayPath, RelaySocketEndpoint.HandleAsync);
 
             return app;
         }

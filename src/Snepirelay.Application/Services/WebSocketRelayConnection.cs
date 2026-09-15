@@ -4,9 +4,9 @@ using System.Threading.Channels;
 using Snepirelay.Application.Dtos.Relay;
 using Snepirelay.Application.Interfaces;
 
-namespace Snepirelay.API.Relay
+namespace Snepirelay.Application.Services
 {
-    public sealed class WebSocketConnection(WebSocket socket, int queueSize) : IRelayConnection
+    public sealed class WebSocketRelayConnection(WebSocket socket, int queueSize) : IRelayConnection
     {
         public const string NormalReason = "closed";
 

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
+using Snepirelay.API.Controllers;
 using Snepirelay.API.Extensions;
 using Snepirelay.Application.Command.Maintenance;
 
@@ -46,7 +47,7 @@ namespace Snepirelay.Tests.Support
 
         public async Task<RelayClient> ConnectAsync()
         {
-            var socket = await Server.CreateWebSocketClient().ConnectAsync(new Uri(Server.BaseAddress, SnepirelayExtensions.RelayPath), CancellationToken.None);
+            var socket = await Server.CreateWebSocketClient().ConnectAsync(new Uri(Server.BaseAddress, RelayController.Path), CancellationToken.None);
             return new RelayClient(socket);
         }
 

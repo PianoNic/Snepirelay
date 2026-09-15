@@ -1,8 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using Snepirelay.Application.Dtos.Relay;
 using Snepirelay.Application.Models;
 
-namespace Snepirelay.API
+namespace Snepirelay.API.Extensions
 {
     public static class ResultActionResultExtensions
     {
@@ -13,11 +12,6 @@ namespace Snepirelay.API
 
         public static IActionResult ToActionResult<T>(this Result<T> result) =>
             result.IsSuccess ? new OkObjectResult(result.Value) : Problem(result.Error, result.ErrorValues);
-
-        public static RelayEventDto? ToRelayReply(this Result result, string? rid) =>
-            result.IsFailure
-                ? new ErrorDto(result.Error ?? RelayErrors.InvalidMessage, result.ErrorValues) { Rid = rid }
-                : rid is null ? null : new OkDto { Rid = rid };
 
         private static IActionResult Problem(string? error, IReadOnlyDictionary<string, string>? values)
         {
