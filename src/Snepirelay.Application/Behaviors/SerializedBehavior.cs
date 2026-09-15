@@ -2,11 +2,6 @@ using Mediator;
 
 namespace Snepirelay.Application.Behaviors
 {
-    public sealed class RelayGate
-    {
-        public SemaphoreSlim Semaphore { get; } = new(1, 1);
-    }
-
     public sealed class SerializedBehavior<TMessage, TResponse>(RelayGate gate) : IPipelineBehavior<TMessage, TResponse>
         where TMessage : IMessage
     {

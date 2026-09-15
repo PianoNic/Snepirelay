@@ -205,14 +205,4 @@ namespace Snepirelay.Tests
             await Assert.That((await guest.ExpectAsync("playback")).At("state", "sampledAt").GetInt64()).IsEqualTo(relay.NowMs);
         }
     }
-
-    internal static class HttpJson
-    {
-        public static async Task<JsonElement> GetFromJsonElementAsync(this HttpClient client, string path)
-        {
-            var response = await client.GetAsync(path);
-            response.EnsureSuccessStatusCode();
-            return JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement.Clone();
-        }
-    }
 }

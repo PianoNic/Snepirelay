@@ -1,6 +1,4 @@
 using System.Text.Json.Serialization;
-using Snepirelay.Domain;
-using Snepirelay.Domain.Enums;
 
 namespace Snepirelay.Application.Dtos.Relay
 {
@@ -24,24 +22,4 @@ namespace Snepirelay.Application.Dtos.Relay
 
         public string? Rid { get; init; }
     }
-
-    public record HelloMessageDto(int Protocol, string InstallId, string Secret, MemberProfile Profile, DeviceInfo Device) : ClientMessageDto;
-
-    public record PingMessageDto(long ClientTime) : ClientMessageDto;
-
-    public record CreateMessageDto : ClientMessageDto;
-
-    public record JoinMessageDto(string JoinToken) : ClientMessageDto;
-
-    public record LeaveMessageDto : ClientMessageDto;
-
-    public record EndMessageDto : ClientMessageDto;
-
-    public record KickMessageDto(string MemberId) : ClientMessageDto;
-
-    public record SettingsMessageDto(GuestControl GuestControl) : ClientMessageDto;
-
-    public record PlaybackMessageDto(PlaybackState State) : ClientMessageDto;
-
-    public record CommandMessageDto(RelayCommand Command) : ClientMessageDto;
 }

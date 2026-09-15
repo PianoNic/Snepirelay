@@ -1,4 +1,3 @@
-using Snepirelay.Domain;
 using Snepirelay.Domain.Enums;
 
 namespace Snepirelay.Application.Dtos.Jams
@@ -12,17 +11,4 @@ namespace Snepirelay.Application.Dtos.Jams
         GuestControl GuestControl,
         int MaxMemberCount,
         long Timestamp);
-
-    public record JamMemberDto(
-        string Id,
-        string? UserId,
-        string DisplayName,
-        string? ImageUrl,
-        DeviceInfo Device,
-        bool IsHost,
-        bool IsCurrentUser,
-        bool Listening,
-        long JoinedAt);
-
-    public record JamPreviewDto(string HostDisplayName, string? HostImageUrl, int MemberCount, int MaxMemberCount);
 }
