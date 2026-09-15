@@ -143,9 +143,7 @@ namespace Snepirelay.Application.Services
         private static ErrorDto Error(string code, string? rid, params (string Key, string Value)[] values) =>
             new(code, values.Length == 0 ? null : values.ToDictionary(v => v.Key, v => v.Value)) { Rid = rid };
 
-        private sealed record Frame(string Text, bool TooLarge);
-
-        private static async Task<Frame?> ReceiveAsync(WebSocket socket, int maxBytes, CancellationToken cancellationToken)
+        private static async Task<(string Text, bool TooLarge)?> ReceiveAsync(WebSocket socket, int maxBytes, CancellationToken cancellationToken)
         {
             var buffer = ArrayPool<byte>.Shared.Rent(8192);
             try
@@ -158,12 +156,12 @@ namespace Snepirelay.Application.Services
                         return null;
 
                     if (message.Length + received.Count > maxBytes)
-                        return new Frame(string.Empty, TooLarge: true);
+                        return (string.Empty, true);
 
                     message.Write(buffer, 0, received.Count);
 
                     if (received.EndOfMessage)
-                        return new Frame(Encoding.UTF8.GetString(message.GetBuffer(), 0, (int)message.Length), TooLarge: false);
+                        return (Encoding.UTF8.GetString(message.GetBuffer(), 0, (int)message.Length), false);
                 }
             }
             finally

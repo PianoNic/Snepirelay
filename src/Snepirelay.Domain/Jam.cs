@@ -16,6 +16,4 @@ namespace Snepirelay.Domain
 
         public void Touch(DateTimeOffset now) => Timestamp = Math.Max(Timestamp + 1, now.ToUnixTimeMilliseconds());
     }
-
-    public record JamMembership(string MemberId, DateTimeOffset JoinedAt);
 }
