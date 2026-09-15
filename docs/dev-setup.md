@@ -11,6 +11,8 @@
 dotnet run --project src/Snepirelay.API        # relay on :5180, socket at ws://localhost:5180/api/relay
 ```
 
+In Development the OpenAPI document is at `http://localhost:5180/openapi/v1.json` and the Scalar reference at `http://localhost:5180/scalar`. Both are off in production.
+
 ## Tests
 
 ```bash
