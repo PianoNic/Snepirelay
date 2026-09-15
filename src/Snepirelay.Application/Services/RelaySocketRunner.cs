@@ -4,43 +4,32 @@ using System.Text;
 using System.Text.Json;
 using Mediator;
 using Microsoft.Extensions.Options;
-using Snepirelay.Application;
 using Snepirelay.Application.Command.Jams;
 using Snepirelay.Application.Command.Members;
 using Snepirelay.Application.Command.Playback;
 using Snepirelay.Application.Dtos.Relay;
 using Snepirelay.Application.Models;
 
-namespace Snepirelay.API.Relay
+namespace Snepirelay.Application.Services
 {
-    public static class RelaySocketEndpoint
+    public class RelaySocketRunner(IMediator mediator, IOptions<RelayOptions> options, TimeProvider time)
     {
-        public static async Task HandleAsync(HttpContext context)
+        public async Task RunAsync(WebSocket socket, CancellationToken cancellationToken)
         {
-            if (!context.WebSockets.IsWebSocketRequest)
-            {
-                context.Response.StatusCode = StatusCodes.Status400BadRequest;
-                return;
-            }
-
-            var mediator = context.RequestServices.GetRequiredService<IMediator>();
-            var options = context.RequestServices.GetRequiredService<IOptions<RelayOptions>>().Value;
-            var time = context.RequestServices.GetRequiredService<TimeProvider>();
-
-            using var socket = await context.WebSockets.AcceptWebSocketAsync();
-            var connection = new WebSocketConnection(socket, options.OutboundQueueSize);
+            var settings = options.Value;
+            var connection = new WebSocketRelayConnection(socket, settings.OutboundQueueSize);
             var writer = connection.RunWriterAsync();
             string? memberId = null;
 
             try
             {
-                using var receiveCancellation = CancellationTokenSource.CreateLinkedTokenSource(context.RequestAborted, connection.Aborted);
+                using var receiveCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, connection.Aborted);
 
-                while (await ReceiveAsync(socket, options.MaxMessageBytes, receiveCancellation.Token) is { } frame)
+                while (await ReceiveAsync(socket, settings.MaxMessageBytes, receiveCancellation.Token) is { } frame)
                 {
                     if (frame.TooLarge)
                     {
-                        connection.Send(Error(RelayErrors.MessageTooLarge, null, ("maxMessageBytes", $"{options.MaxMessageBytes}")));
+                        connection.Send(Error(RelayErrors.MessageTooLarge, null, ("maxMessageBytes", $"{settings.MaxMessageBytes}")));
                         connection.Close("message_too_large");
                         break;
                     }
@@ -56,7 +45,7 @@ namespace Snepirelay.API.Relay
 
                     if (memberId is null)
                     {
-                        if (message is not HelloMessage hello)
+                        if (message is not HelloMessageDto hello)
                         {
                             connection.Send(Error(RelayErrors.HelloRequired, message.Rid));
                             connection.Close("hello_required");
@@ -65,7 +54,7 @@ namespace Snepirelay.API.Relay
 
                         var connected = await mediator.Send(
                             new ConnectMemberCommand(connection, hello.Protocol, hello.InstallId, hello.Secret, hello.Profile, hello.Device),
-                            context.RequestAborted);
+                            cancellationToken);
 
                         if (connected.IsFailure)
                         {
@@ -78,13 +67,13 @@ namespace Snepirelay.API.Relay
                         continue;
                     }
 
-                    if (message is PingMessage ping)
+                    if (message is PingMessageDto ping)
                     {
                         connection.Send(new PongDto(ping.ClientTime, time.GetUtcNow().ToUnixTimeMilliseconds()) { Rid = ping.Rid });
                         continue;
                     }
 
-                    var result = await DispatchAsync(mediator, memberId, message, context.RequestAborted);
+                    var result = await DispatchAsync(memberId, message, cancellationToken);
                     if (result.ToRelayReply(message.Rid) is { } reply)
                         connection.Send(reply);
                 }
@@ -97,47 +86,43 @@ namespace Snepirelay.API.Relay
                 if (memberId is not null)
                     await mediator.Send(new DisconnectMemberCommand(memberId, connection), CancellationToken.None);
 
-                connection.Close(WebSocketConnection.NormalReason);
+                connection.Close(WebSocketRelayConnection.NormalReason);
                 await writer;
             }
         }
 
-        private static ValueTask<Result> DispatchAsync(IMediator mediator, string memberId, ClientMessage message, CancellationToken cancellationToken) =>
+        private ValueTask<Result> DispatchAsync(string memberId, ClientMessageDto message, CancellationToken cancellationToken) =>
             message switch
             {
-                CreateMessage => mediator.Send(new CreateJamCommand(memberId), cancellationToken),
-                JoinMessage join => mediator.Send(new JoinJamCommand(memberId, join.JoinToken), cancellationToken),
-                LeaveMessage => mediator.Send(new LeaveJamCommand(memberId), cancellationToken),
-                EndMessage => mediator.Send(new EndJamCommand(memberId), cancellationToken),
-                KickMessage kick => mediator.Send(new KickMemberCommand(memberId, kick.MemberId), cancellationToken),
-                SettingsMessage settings => mediator.Send(new SetGuestControlCommand(memberId, settings.GuestControl), cancellationToken),
-                PlaybackMessage playback => mediator.Send(new PublishPlaybackCommand(memberId, playback.State), cancellationToken),
-                CommandMessage command => mediator.Send(new SendGuestCommandCommand(memberId, command.Command), cancellationToken),
+                CreateMessageDto => mediator.Send(new CreateJamCommand(memberId), cancellationToken),
+                JoinMessageDto join => mediator.Send(new JoinJamCommand(memberId, join.JoinToken), cancellationToken),
+                LeaveMessageDto => mediator.Send(new LeaveJamCommand(memberId), cancellationToken),
+                EndMessageDto => mediator.Send(new EndJamCommand(memberId), cancellationToken),
+                KickMessageDto kick => mediator.Send(new KickMemberCommand(memberId, kick.MemberId), cancellationToken),
+                SettingsMessageDto settings => mediator.Send(new SetGuestControlCommand(memberId, settings.GuestControl), cancellationToken),
+                PlaybackMessageDto playback => mediator.Send(new PublishPlaybackCommand(memberId, playback.State), cancellationToken),
+                CommandMessageDto command => mediator.Send(new SendGuestCommandCommand(memberId, command.Command), cancellationToken),
                 _ => ValueTask.FromResult(Result.Failure(RelayErrors.InvalidMessage, new Dictionary<string, string> { ["reason"] = "already said hello" })),
             };
 
-        private static (ClientMessage? Message, ErrorDto? Error) Parse(string text)
+        private static (ClientMessageDto? Message, ErrorDto? Error) Parse(string text)
         {
             try
             {
                 using var document = JsonDocument.Parse(text);
                 var root = document.RootElement;
-                var type = root.ValueKind == JsonValueKind.Object && root.TryGetProperty("type", out var typeElement) && typeElement.ValueKind == JsonValueKind.String
-                    ? typeElement.GetString()
-                    : null;
-                var rid = root.ValueKind == JsonValueKind.Object && root.TryGetProperty("rid", out var ridElement) && ridElement.ValueKind == JsonValueKind.String
-                    ? ridElement.GetString()
-                    : null;
+                var type = StringProperty(root, "type");
+                var rid = StringProperty(root, "rid");
 
                 if (type is null)
                     return (null, Error(RelayErrors.InvalidMessage, rid, ("reason", "a message needs a string type")));
 
-                if (!ClientMessage.Types.Contains(type))
+                if (!ClientMessageDto.Types.Contains(type))
                     return (null, Error(RelayErrors.UnknownType, rid, ("type", type)));
 
                 try
                 {
-                    return (root.Deserialize<ClientMessage>(RelayJson.Options), null);
+                    return (root.Deserialize<ClientMessageDto>(RelayJson.Options), null);
                 }
                 catch (JsonException exception)
                 {
@@ -149,6 +134,11 @@ namespace Snepirelay.API.Relay
                 return (null, Error(RelayErrors.InvalidMessage, null, ("reason", "not JSON")));
             }
         }
+
+        private static string? StringProperty(JsonElement root, string name) =>
+            root.ValueKind == JsonValueKind.Object && root.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
+                ? value.GetString()
+                : null;
 
         private static ErrorDto Error(string code, string? rid, params (string Key, string Value)[] values) =>
             new(code, values.Length == 0 ? null : values.ToDictionary(v => v.Key, v => v.Value)) { Rid = rid };

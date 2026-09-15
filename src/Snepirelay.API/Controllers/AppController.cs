@@ -1,11 +1,10 @@
 using System.Reflection;
 using Microsoft.AspNetCore.Mvc;
+using Snepirelay.Application.Dtos.App;
 using Snepirelay.Application.Models;
 
 namespace Snepirelay.API.Controllers
 {
-    public record AppDto(string Version, int Protocol);
-
     [ApiController]
     [Route("api/app")]
     public class AppController : ControllerBase
