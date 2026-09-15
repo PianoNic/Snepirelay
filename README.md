@@ -3,12 +3,11 @@
 </p>
 <p align="center">
   <strong>Snepirelay</strong><br/>
-  Jams for every account, free ones included.
+  The relay that keeps Snepilatch devices in step.
 </p>
 <p align="center">
   <a href="https://github.com/PianoNic/Snepirelay"><img src="https://badgetrack.pianonic.ch/badge?tag=snepirelay&label=visits&color=1DB954&style=flat" alt="visits" /></a>
   <a href="docs/self-host.md"><img src="https://img.shields.io/badge/Self--Host-Instructions-1DB954.svg" alt="Self-hosting" /></a>
-  <a href="docs/protocol.md"><img src="https://img.shields.io/badge/Protocol-v1-1DB954.svg" alt="Protocol" /></a>
   <a href="https://github.com/PianoNic/Snepilatch"><img src="https://img.shields.io/badge/For-Snepilatch-1DB954.svg" alt="Snepilatch" /></a>
 </p>
 
@@ -16,38 +15,42 @@
 
 ## What is Snepirelay?
 
-A jam lets friends listen together: one person hosts, everyone hears the same song at the same moment, and guests can add to the queue or take over the controls. Usually only a paid account may host one.
+Some things in [Snepilatch](https://github.com/PianoNic/Snepilatch) need phones to talk to each other: one device changes something, and others have to follow within a heartbeat. Snepirelay is the small server in the middle. Every device keeps one live connection to it, and it passes messages between them the moment they arrive.
 
-Snepirelay is the server that lets [Snepilatch](https://github.com/PianoNic/Snepilatch) host jams for any account. Every member still plays the music on their own account and their own device. The relay only carries what keeps them together: the host's playback, the guests' requests, and who is in the jam.
+It never plays or stores music and never sees anyone's login. It only knows which devices belong together and what they told each other.
 
-No audio passes through it, and it never sees anyone's login.
+Today it powers **jams**: friends listening together, with any account able to host. More of Snepilatch will run through it over time.
 
 ## Features
 
-- **Anyone can host**: a free account starts a jam the same way a premium one does.
-- **The official jam, rebuilt**: join with the token an invite carries, guests queue songs or control playback, the host can kick guests or limit them to the queue, and membership changes use the same reasons an official jam does.
-- **In sync**: the host's position comes with a server timestamp, and a ping gives each device its clock offset, so guests land on the same second.
-- **Survives a tunnel**: a dropped connection keeps its place for a minute and comes back into the same jam.
-- **Nothing stored**: jams live in memory and are gone when they end.
+- **Real time**: one WebSocket per device, messages relayed as soon as they arrive.
+- **Survives a tunnel**: a dropped connection keeps its place for a minute and picks up where it left off.
+- **In sync**: every message carries server time, and a ping gives each device its clock offset.
+- **Nothing stored**: everything lives in memory and is gone when it is no longer needed.
 - **Tiny footprint**: one small container, a few kilobytes per message, no database.
+- **Built to grow**: each feature is a set of commands on the same connection, so new ones slot in beside jams.
 
-## How a jam works
+## Jams
+
+A jam lets friends listen together: one person hosts, everyone hears the same song at the same moment, and guests can add to the queue or take over the controls. Usually only a paid account may host one. Through Snepirelay any account can.
+
+Every member still plays the music on their own account and device. The relay carries the host's playback, the guests' requests and who is in the jam.
 
 | Step | Host | Guest |
 | --- | --- | --- |
 | Connect | `hello` | `hello` |
-| Start or join | `create` | `join` with the join token |
+| Start or join | `create` | `join` with the invite's token |
 | Listen | publishes `playback` on every change | receives `playback` and follows it |
-| Control | receives `command` and applies it | sends `command`, within the guest control |
+| Control | receives `command` and applies it | sends `command`, if the host allows it |
 | Finish | `end` or `leave` | `leave` |
 
-The full message reference is in [the protocol](docs/protocol.md).
+The host decides how much guests may do: everything, only add to the queue, or nothing. The host can also remove a guest.
 
 ## Get started
 
 - 📦 **[Self-hosting guide](docs/self-host.md)** - run the image with `docker compose`.
 - 🛠️ **[Developer setup](docs/dev-setup.md)** - build, run and test locally.
-- 🧩 **[Protocol](docs/protocol.md)** - every message, reason and error.
+- 💬 **[Messages](docs/messages.md)** - every message, reason and error the relay speaks.
 
 ## License
 

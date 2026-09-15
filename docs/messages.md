@@ -1,4 +1,4 @@
-# Relay protocol
+# Messages
 
 Version 1. One WebSocket per device at `/api/relay`, one JSON object per text frame. Every object has a `type`. Fields are camelCase, enums are camelCase strings, times are Unix milliseconds on the server clock.
 
