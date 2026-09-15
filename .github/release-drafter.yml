@@ -1,0 +1,87 @@
+name-template: 'v$RESOLVED_VERSION'
+tag-template: 'v$RESOLVED_VERSION'
+
+version-resolver:
+  default: patch
+
+categories:
+  - type: 'pre-exclude'
+    when:
+      labels:
+        - 'skip-changelog'
+        - 'dependencies'
+
+  - title: '🚀 Features'
+    semver-increment: 'minor'
+    when:
+      label: 'feature'
+  - title: '✨ Enhancements'
+    semver-increment: 'minor'
+    when:
+      label: 'enhancement'
+  - title: '🛠️ Refactors'
+    when:
+      label: 'refactor'
+  - title: '🐛 Bug Fixes'
+    semver-increment: 'patch'
+    when:
+      label: 'bug'
+  - title: '📚 Documentation'
+    when:
+      label: 'documentation'
+  - title: '🔧 CI / Build'
+    when:
+      label: 'CI/CD'
+
+  - type: 'version-resolver'
+    semver-increment: 'major'
+    when:
+      labels:
+        - 'major'
+        - 'breaking'
+  - type: 'version-resolver'
+    semver-increment: 'minor'
+    when:
+      label: 'minor'
+  - type: 'version-resolver'
+    semver-increment: 'patch'
+    when:
+      labels:
+        - 'bugfix'
+        - 'patch'
+        - 'hotfix'
+        - 'security'
+
+change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
+change-title-escapes: '\<*_&`'
+
+no-changes-template: 'No changes in this release.'
+
+template: |
+  ## What's Changed
+
+  $CHANGES
+
+  **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION
+
+autolabeler:
+  - label: 'feature'
+    title:
+      - '/^feat(\(.+\))?\!?:.+/'
+  - label: 'bug'
+    title:
+      - '/^fix(\(.+\))?\!?:.+/'
+  - label: 'breaking'
+    title:
+      - '/^.+\!:.+/'
+  - label: 'documentation'
+    title:
+      - '/^docs(\(.+\))?\!?:.+/'
+    files:
+      - '*.md'
+      - 'docs/**/*'
+  - label: 'CI/CD'
+    title:
+      - '/^(ci|build)(\(.+\))?\!?:.+/'
+    files:
+      - '.github/**/*'

@@ -1,0 +1,6 @@
+services:
+  snepirelay:
+    image: ghcr.io/pianonic/snepirelay:latest
+    restart: unless-stopped
+    ports:
+      - "8080:8080"

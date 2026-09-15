@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Snepirelay.Domain/Snepirelay.Domain.csproj" />
+    <Project Path="src/Snepirelay.Infrastructure/Snepirelay.Infrastructure.csproj" />
+    <Project Path="src/Snepirelay.Application/Snepirelay.Application.csproj" />
+    <Project Path="src/Snepirelay.API/Snepirelay.API.csproj" />
+    <Project Path="src/Snepirelay.Tests/Snepirelay.Tests.csproj" />
+  </Folder>
+</Solution>
